@@ -1,0 +1,18 @@
+name: followup
+
+# 每天调用一次跟进接口：给 7 天前检查过合同、还没回来的用户发一封提醒。
+# token 由站点 SESSION_SECRET 派生，只能触发提醒与读取聚合统计，不含个人信息。
+on:
+  schedule:
+    - cron: "20 2 * * *"   # 02:20 UTC = 10:20 北京时间
+  workflow_dispatch:
+
+jobs:
+  followup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger follow-up emails
+        run: |
+          resp=$(curl -sS --max-time 120 "https://tidycontracts.onrender.com/api/cron/followup?key=bde4dd4c878a324abde46da6d53dddce" || echo '{"ok":false}')
+          echo "$resp" | head -c 1200

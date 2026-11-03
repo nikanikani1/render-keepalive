@@ -1,0 +1,22 @@
+name: mentions
+
+# 每天巡检 Reddit / HN / Lobsters / dev.to 上提到合同痛点的帖子，推到飞书群。
+# 鉴权用的是站点派生 token，只能读取聚合结果，不含用户数据。
+on:
+  schedule:
+    - cron: "10 1 * * *"   # 01:10 UTC = 09:10 北京时间
+  workflow_dispatch:
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Run mention watch
+        run: |
+          resp=$(curl -sS --max-time 240 \
+            "https://tidycontracts.onrender.com/api/cron/mentions?key=bde4dd4c878a324abde46da6d53dddce" \
+            || echo '{"ok":false}')
+          echo "$resp" | head -c 1500
+          # 数量为 0 时站点不会推飞书，这里也不让工作流失败
+          echo "$resp" | grep -q '"ok":true' || exit 1

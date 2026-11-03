@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Trigger contract expiry reminders
+        run: |
+          curb=$(curl -sS --max-time 120 "https://tidycontracts.onrender.com/api/cron/reminders?key=bde4dd4c878a324abde46da6d53dddce" || echo "{"ok":false}")
+          echo "$curb" | head -c 1200
+
       - name: Trigger follow-up emails
         run: |
           resp=$(curl -sS --max-time 120 "https://tidycontracts.onrender.com/api/cron/followup?key=bde4dd4c878a324abde46da6d53dddce" || echo '{"ok":false}')

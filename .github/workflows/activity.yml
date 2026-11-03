@@ -1,0 +1,31 @@
+name: activity
+
+# GitHub 会把「公开仓库 60 天没有提交活动」的定时任务自动停用。
+# 这个工作流每月推一个空提交，让仓库保持活跃，避免 keepalive / followup / mentions 被悄悄关掉。
+#
+# 手动补推：Actions → activity → Run workflow
+on:
+  schedule:
+    - cron: "0 3 1 * *"   # 每月 1 号 03:00 UTC = 11:00 北京时间
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: activity
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push an empty commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep scheduled workflows active ($(date -u +%Y-%m-%d))"
+          git push

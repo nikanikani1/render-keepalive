@@ -1,18 +1,32 @@
 name: keepalive
 
 # 放在公开仓库里：GitHub 对公开仓库的 Actions 分钟数不收费
+#
+# 历史教训（2026-11-03）：
+#   原来每 10 分钟只打 "/"，但 "/" 是 308 跳转到 "/en"，
+#   curl 不跟随跳转 → 只拿到重定向响应，页面从未真正渲染；
+#   再加上 GitHub 定时任务常延迟 5–15 分钟，超过 Render 15 分钟休眠线，
+#   于是用户第一下访问仍要等 12–23 秒冷启动。
+#   现在直接打真实页面，并把间隔压到 5 分钟。
 on:
   schedule:
-    # Render 免费档 15 分钟无请求休眠，这里留 5 分钟余量
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Ping TidyContracts
+      - name: Warm the real pages
         run: |
-          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 120 https://tidycontracts.onrender.com/ || echo "000")
-          echo "HTTP $code at $(date -u +%FT%TZ)"
+          for path in /en /zh /en/pricing; do
+            out=$(curl -sS -L -o /dev/null --max-time 120 \
+              -w "%{http_code} %{time_starttransfer}" \
+              "https://tidycontracts.onrender.com${path}" || echo "000 0")
+            echo "${path} -> ${out} at $(date -u +%FT%TZ)"
+          done
